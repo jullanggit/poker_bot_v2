@@ -1,7 +1,12 @@
+#![feature(generic_const_exprs)]
 #![feature(array_try_from_fn)]
+
+use std::{array, collections::HashMap};
 
 pub mod combinations;
 pub mod io;
+
+const FULL_DECK_SIZE: usize = 52;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Card {
@@ -129,6 +134,12 @@ struct Results {
     losses: u64,
 }
 
-fn calculate<const NUM_CARDS: usize>(cards: &[Card; NUM_CARDS]) -> Results {
-    let (player_cards, present_pool) = cards.split_at(2);
+fn calculate<const NUM_CARDS: usize>(present_cards: &[Card; NUM_CARDS]) -> Results
+where
+    [(); 7 - NUM_CARDS]:,
+{
+    let (player_cards, present_pool) = present_cards.split_at(2);
+
+    let player_hands: HashMap<[Card; 7 - NUM_CARDS], Hand> = HashMap::new();
 }
+

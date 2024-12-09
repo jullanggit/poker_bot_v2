@@ -3,6 +3,8 @@
 
 use std::{array, collections::HashMap};
 
+use combinations::CardCombinations;
+
 pub mod combinations;
 pub mod io;
 
@@ -134,13 +136,43 @@ struct Results {
     losses: u64,
 }
 
-fn calculate<const NUM_CARDS: usize>(present_cards: &[Card; NUM_CARDS]) -> Results
+fn calculate<const NUM_CARDS: usize>(present_cards: [Card; NUM_CARDS]) -> Results
 where
     [(); 7 - NUM_CARDS]:,
+    // Seriously? FULL_DECK_SIZE is 52! We already check that 7-NUM_CARDS is valid, so 52-NUM_CARDS is as well!
+    [(); FULL_DECK_SIZE - NUM_CARDS]:,
 {
     let (player_cards, present_pool) = present_cards.split_at(2);
 
     let player_hands: HashMap<[Card; 7 - NUM_CARDS], Hand> = HashMap::new();
+
+    let remaining_deck =
+        create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
+    let player_combinations = CardCombinations::new(&remaining_deck);
+
+    for remaining_pool in player_combinations {
+        /*
+        Combine the present cards with the remaining cards to create a full set of 7 cards
+        I wish there was a better way to do this, but for now, this works
+        Alternative:
+        let combined_cards = array::from_fn(|index| {
+            if index < NUM_CARDS {
+                present_cards[index]
+            } else {
+                remaining_pool[index - NUM_CARDS]
+            }
+        });
+        */
+        let combined_cards = array_from_iter_exact(present_cards.into_iter().chain(remaining_pool))
+            .expect("Failed to create combined cards");
+        let highest_hand = highest_hand();
+    }
+
+    Results {
+        wins: todo!(),
+        draws: todo!(),
+        losses: todo!(),
+    }
 }
 
 /// Creates a full poker deck, without the given present cards in it.

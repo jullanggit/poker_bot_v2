@@ -1,3 +1,16 @@
+mod io;
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Card {
+    value: CardValue,
+    color: Color,
+}
+impl Card {
+    pub fn new(value: CardValue, color: Color) -> Self {
+        Self { value, color }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum CardValue {
     Two,

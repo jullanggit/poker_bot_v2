@@ -1,3 +1,6 @@
+#![feature(array_try_from_fn)]
+
+pub mod combinations;
 pub mod io;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

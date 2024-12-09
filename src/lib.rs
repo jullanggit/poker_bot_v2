@@ -143,3 +143,23 @@ where
     let player_hands: HashMap<[Card; 7 - NUM_CARDS], Hand> = HashMap::new();
 }
 
+/// Creates a full poker deck, without the given present cards in it.
+/// Returns None, if there are any duplicates in the present cards
+fn create_deck_without_present_cards<const NUM_CARDS: usize>(
+    present_cards: [Card; NUM_CARDS],
+) -> Option<[Card; FULL_DECK_SIZE - NUM_CARDS]> {
+    let iter = (2..=14)
+        .flat_map(|value| (0..=3).map(move |color| (value, color)))
+        .map(TryInto::try_into)
+        .map(Result::unwrap)
+        .filter(|card| !present_cards.contains(card));
+
+    array_from_iter_exact(iter)
+}
+
+fn array_from_iter_exact<T, const N: usize>(mut iter: impl Iterator<Item = T>) -> Option<[T; N]> {
+    let array = array::try_from_fn(|_| iter.next());
+
+    // If the iterator isnt used up
+    if iter.next().is_some() { None } else { array }
+}

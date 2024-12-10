@@ -37,9 +37,30 @@ impl<const N: usize, const R: usize> Iterator for CardCombinations<'_, N, R> {
         }
     }
 }
-        }
+/// Increments the given indices, returns whether the end has been reached
+const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize; R]) -> bool {
+    let mut indices_index = R - 1;
 
-        // Return the current combination
-        Some(self.get_current_combination())
+    // Decrement indices index to find one that isnt at its maximum allowed value
+    while indices[indices_index] == indices_index + N - R {
+        if indices_index > 0 {
+            indices_index -= 1;
+        } else {
+            // Last combination reached
+            return true;
+        }
     }
+
+    // Increment the found index
+    indices[indices_index] += 1;
+    // And reset the ones to its right
+    // Cannot use `for right_index in indices_index + 1..R` because it isnt const yet
+    let mut right_index = indices_index + 1;
+    while right_index < R {
+        indices[right_index] = indices[right_index - 1] + 1;
+
+        right_index += 1;
+    }
+
+    false
 }

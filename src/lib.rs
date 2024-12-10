@@ -145,12 +145,15 @@ where
 {
     let (player_cards, present_pool) = present_cards.split_at(2);
 
-    let player_hands: HashMap<[Card; 7 - NUM_CARDS], Hand> = HashMap::new();
-
     let remaining_deck =
         create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
     let player_combinations = CardCombinations::new(&remaining_deck);
 
+    let mut player_hands: HashMap<[Card; 7 - NUM_CARDS], Hand> =
+        HashMap::with_capacity(num_combinations::<
+            { FULL_DECK_SIZE - NUM_CARDS },
+            { 7 - NUM_CARDS },
+        >());
     for remaining_pool in player_combinations {
         /*
         Combine the present cards with the remaining cards to create a full set of 7 cards

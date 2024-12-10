@@ -37,6 +37,24 @@ impl<const N: usize, const R: usize> Iterator for CardCombinations<'_, N, R> {
         }
     }
 }
+
+/// Calculates nCr
+pub const fn num_combinations<const N: usize, const R: usize>() -> usize {
+    // Initialize indices
+    let mut indices = [0; R];
+    let mut i = 0;
+    while i < R {
+        indices[i] = i;
+        i += 1;
+    }
+
+    let mut result = 0;
+    while !increment_indices::<N, R>(&mut indices) {
+        result += 1;
+    }
+    result
+}
+
 /// Increments the given indices, returns whether the end has been reached
 const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize; R]) -> bool {
     let mut indices_index = R - 1;

@@ -1,11 +1,12 @@
 #![feature(generic_const_exprs)]
 #![feature(array_try_from_fn)]
 
+use combinations::CardCombinations;
+use highest_hand::highest_hand;
 use std::{array, collections::HashMap};
 
-use combinations::CardCombinations;
-
 pub mod combinations;
+pub mod highest_hand;
 pub mod io;
 
 const FULL_DECK_SIZE: usize = 52;
@@ -165,7 +166,7 @@ where
         */
         let combined_cards = array_from_iter_exact(present_cards.into_iter().chain(remaining_pool))
             .expect("Failed to create combined cards");
-        let highest_hand = highest_hand();
+        let highest_hand = highest_hand(combined_cards, Hand::HighCard);
     }
 
     Results {

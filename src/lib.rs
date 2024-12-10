@@ -117,7 +117,7 @@ impl TryFrom<u8> for Color {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub enum Hand {
     RoyalFlush,
     StraightFlush,
@@ -131,6 +131,7 @@ pub enum Hand {
     HighCard,
 }
 
+#[derive(Default)]
 pub struct Results {
     wins: u64,
     draws: u64,
@@ -142,6 +143,7 @@ where
     [(); 7 - NUM_CARDS]:,
     // Seriously? FULL_DECK_SIZE is 52! We already check that 7-NUM_CARDS is valid, so 52-NUM_CARDS is as well!
     [(); FULL_DECK_SIZE - NUM_CARDS]:,
+    [(); 9 - NUM_CARDS]:,
 {
     let remaining_deck =
         create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
@@ -169,14 +171,32 @@ where
         */
         let combined_cards = array_from_iter_exact(present_cards.into_iter().chain(remaining_pool))
             .expect("Failed to create combined cards");
-        player_hands.insert(remaining_pool, highest_hand(combined_cards, Hand::HighCard));
+        player_hands.insert(remaining_pool, highest_hand(combined_cards));
     }
 
-    Results {
-        wins: todo!(),
-        draws: todo!(),
-        losses: todo!(),
+    let mut results = Results::default();
+
+    // Calculate results
+    // For all possible remaining cards
+    for cards in
+        CardCombinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 9 - NUM_CARDS }>::new(&remaining_deck)
+    {
+        let combined_cards = array_from_iter_exact(present_cards.into_iter().skip(2).chain(cards))
+            .expect("Failed to create combined cards");
+        let highest_hand = highest_hand(combined_cards);
+
+        for remaining_pool in CardCombinations::new(&cards) {
+            let player_hand = player_hands[&remaining_pool];
+
+            match highest_hand.cmp(&player_hand) {
+                std::cmp::Ordering::Less => results.losses += 1,
+                std::cmp::Ordering::Equal => results.draws += 1,
+                std::cmp::Ordering::Greater => results.wins += 1,
+            }
+        }
     }
+
+    results
 }
 
 /// Creates a full poker deck, without the given present cards in it.

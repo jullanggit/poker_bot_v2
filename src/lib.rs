@@ -1,7 +1,7 @@
 #![feature(generic_const_exprs)]
 #![feature(array_try_from_fn)]
 
-use combinations::CardCombinations;
+use combinations::{CardCombinations, num_combinations};
 use highest_hand::highest_hand;
 use std::{array, collections::HashMap};
 
@@ -11,7 +11,7 @@ pub mod io;
 
 const FULL_DECK_SIZE: usize = 52;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Card {
     value: CardValue,
     color: Color,
@@ -29,7 +29,7 @@ impl TryFrom<(u8, u8)> for Card {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 pub enum CardValue {
     Two,
     Three,
@@ -87,7 +87,7 @@ impl TryFrom<u8> for CardValue {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 pub enum Color {
     Hearts,
     Diamonds,
@@ -131,20 +131,18 @@ pub enum Hand {
     HighCard,
 }
 
-struct Results {
+pub struct Results {
     wins: u64,
     draws: u64,
     losses: u64,
 }
 
-fn calculate<const NUM_CARDS: usize>(present_cards: [Card; NUM_CARDS]) -> Results
+pub fn calculate<const NUM_CARDS: usize>(present_cards: [Card; NUM_CARDS]) -> Results
 where
     [(); 7 - NUM_CARDS]:,
     // Seriously? FULL_DECK_SIZE is 52! We already check that 7-NUM_CARDS is valid, so 52-NUM_CARDS is as well!
     [(); FULL_DECK_SIZE - NUM_CARDS]:,
 {
-    let (player_cards, present_pool) = present_cards.split_at(2);
-
     let remaining_deck =
         create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
     let player_combinations = CardCombinations::new(&remaining_deck);
@@ -154,6 +152,8 @@ where
             { FULL_DECK_SIZE - NUM_CARDS },
             { 7 - NUM_CARDS },
         >());
+
+    // Fill hashmap with player hands
     for remaining_pool in player_combinations {
         /*
         Combine the present cards with the remaining cards to create a full set of 7 cards
@@ -169,7 +169,7 @@ where
         */
         let combined_cards = array_from_iter_exact(present_cards.into_iter().chain(remaining_pool))
             .expect("Failed to create combined cards");
-        let highest_hand = highest_hand(combined_cards, Hand::HighCard);
+        player_hands.insert(remaining_pool, highest_hand(combined_cards, Hand::HighCard));
     }
 
     Results {

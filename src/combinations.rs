@@ -39,6 +39,8 @@ impl<const N: usize, const R: usize> Iterator for CardCombinations<'_, N, R> {
 }
 
 /// Calculates nCr
+// Also, this is horribly inefficient, but its at compile time, so it doesnt matter.
+// The upside is that this uses the same code as actually generating the combinations
 pub const fn num_combinations<const N: usize, const R: usize>() -> usize {
     // Initialize indices
     let mut indices = [0; R];
@@ -48,7 +50,7 @@ pub const fn num_combinations<const N: usize, const R: usize>() -> usize {
         i += 1;
     }
 
-    let mut result = 0;
+    let mut result = 1;
     while !increment_indices::<N, R>(&mut indices) {
         result += 1;
     }

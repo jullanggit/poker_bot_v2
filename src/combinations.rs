@@ -87,18 +87,57 @@ const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize;
 
 #[cfg(test)]
 mod tests {
+    mod increment_indices {
+        use std::array;
+
+        use crate::combinations::increment_indices;
+
+        #[test]
+        fn basic() {
+            macro_rules! increment_indices {
+                ($N:literal,$R:literal,$expected:expr) => {
+                    // I know this is just manual snapshot testing, but insta kinda doesnt play well with loops & macros
+                    let mut indices: [usize; $R] = array::from_fn(|index| index);
+
+                    let mut i = 0;
+                    // Just a while loop with the condition at the end
+                    loop {
+                        assert_eq!(indices, $expected[i]);
+                        i += 1;
+
+                        if !increment_indices::<$N, $R>(&mut indices) { break; }
+                    }
+                };
+            }
+
+            // I know this is just manual snapshot testing, but insta kinda doesnt play well with loops & macros
+            increment_indices!(4, 2, [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]);
+            increment_indices!(5, 3, [
+                [0, 1, 2],
+                [0, 1, 3],
+                [0, 1, 4],
+                [0, 2, 3],
+                [0, 2, 4],
+                [0, 3, 4],
+                [1, 2, 3],
+                [1, 2, 4],
+                [1, 3, 4],
+                [2, 3, 4],
+            ]);
+        }
+    }
     mod num_combinations {
         use crate::combinations::num_combinations;
 
         #[test]
         fn equal_n_r() {
             macro_rules! equal_n_r {
-            ($($num:literal),+) => {
-                $(
-                    assert_eq!(num_combinations::<$num, $num>(), 1);
-                )+
-            };
-        }
+                ($($num:literal),+) => {
+                    $(
+                        assert_eq!(num_combinations::<$num, $num>(), 1);
+                    )+
+                };
+            }
             equal_n_r!(1, 2, 3, 5, 8, 13, 21, 34, 55);
         }
         #[test]

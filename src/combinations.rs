@@ -84,3 +84,40 @@ const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize;
 
     false
 }
+
+#[cfg(test)]
+mod tests {
+    mod num_combinations {
+        use crate::combinations::num_combinations;
+
+        #[test]
+        fn equal_n_r() {
+            macro_rules! equal_n_r {
+            ($($num:literal),+) => {
+                $(
+                    assert_eq!(num_combinations::<$num, $num>(), 1);
+                )+
+            };
+        }
+            equal_n_r!(1, 2, 3, 5, 8, 13, 21, 34, 55);
+        }
+        #[test]
+        fn different_n_r() {
+            macro_rules! different_n_r {
+                ($(($N:literal, $R:literal, $E:literal)),+) => {
+                    $(
+                        assert_eq!(num_combinations::<$N, $R>(), $E);
+                    )*
+                };
+            }
+            different_n_r!(
+                // Fibonacci :)
+                (2, 1, 2),
+                (5, 3, 10),
+                (13, 8, 1287),
+                (6, 4, 15),
+                (47, 4, 178365)
+            );
+        }
+    }
+}

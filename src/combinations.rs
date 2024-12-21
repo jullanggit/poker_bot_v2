@@ -85,12 +85,13 @@ const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize;
     false
 }
 
-struct CombinationMap<const N: usize, const R: usize>
+pub struct CombinationMap<const N: usize, const R: usize>
 where
     [(); num_combinations(N, R)]:,
     [[(); R - 1]; N - 1]:,
 {
-    array: [Hand; num_combinations(N, R)],
+    /// An array containing the player hand, in lexicographic order by the combination that produced it
+    pub array: [Hand; num_combinations(N, R)],
     precomputed_num_combinations: [[usize; R - 1]; N - 1],
 }
 impl<const N: usize, const R: usize> CombinationMap<N, R>
@@ -98,7 +99,7 @@ where
     [(); num_combinations(N, R)]:,
     [[(); R - 1]; N - 1]:,
 {
-    const fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             array: [Hand::RoyalFlush; num_combinations(N, R)],
             precomputed_num_combinations: precompute_num_combinations::<N, R>(),

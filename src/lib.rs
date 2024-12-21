@@ -1,7 +1,7 @@
 #![feature(generic_const_exprs)]
 #![feature(array_try_from_fn)]
 
-use combinations::{CardCombinations, num_combinations};
+use combinations::{CardCombinations, CombinationMap, num_combinations};
 use highest_hand::highest_hand;
 use std::{array, collections::HashMap};
 
@@ -144,16 +144,20 @@ where
     // Seriously? FULL_DECK_SIZE is 52! We already check that 7-NUM_CARDS is valid, so 52-NUM_CARDS is as well!
     [(); FULL_DECK_SIZE - NUM_CARDS]:,
     [(); 9 - NUM_CARDS]:,
+    // N = FULL_DECK_SIZE - NUM_CARDS, R = 7 - NUM_CARDS
+    [(); num_combinations(FULL_DECK_SIZE - NUM_CARDS, 7 - NUM_CARDS)]:,
+    [(); FULL_DECK_SIZE - NUM_CARDS - 1]:,
+    [(); 7 - NUM_CARDS - 1]:,
 {
     let remaining_deck =
         create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
     let player_combinations = CardCombinations::new(&remaining_deck);
 
-    let mut player_hands: HashMap<[Card; 7 - NUM_CARDS], Hand> =
-        HashMap::with_capacity(num_combinations(FULL_DECK_SIZE - NUM_CARDS, 7 - NUM_CARDS));
+    let mut player_hands: CombinationMap<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }> =
+        const { CombinationMap::new() };
 
     // Fill hashmap with player hands
-    for remaining_pool in player_combinations {
+    for (i, remaining_pool) in player_combinations.enumerate() {
         /*
         Combine the present cards with the remaining cards to create a full set of 7 cards
         I wish there was a better way to do this, but for now, this works
@@ -168,7 +172,9 @@ where
         */
         let combined_cards = array_from_iter_exact(present_cards.into_iter().chain(remaining_pool))
             .expect("Failed to create combined cards");
-        player_hands.insert(remaining_pool, highest_hand(combined_cards));
+
+        // This iterator should be in lexicographic order, so directly indexing the array should be fine
+        player_hands.array[i] = highest_hand(combined_cards);
     }
 
     let mut results = Results::default();
@@ -183,7 +189,7 @@ where
         let highest_hand = highest_hand(combined_cards);
 
         for remaining_pool in CardCombinations::new(&cards) {
-            let player_hand = player_hands[&remaining_pool];
+            let player_hand = player_hands[remaining_pool];
 
             match highest_hand.cmp(&player_hand) {
                 std::cmp::Ordering::Less => results.losses += 1,

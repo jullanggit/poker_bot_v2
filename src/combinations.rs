@@ -114,6 +114,24 @@ where
     }
 }
 
+const fn precompute_combinations<const N: usize, const R: usize>() -> [[usize; R - 1]; N - 1] {
+    let mut result = [[0; R - 1]; N - 1];
+
+    let mut n = 0;
+    while n < N - 1 {
+        let mut r = 0;
+        while r < R - 1 {
+            result[n][r] = num_combinations(n, r);
+
+            r += 1;
+        }
+
+        n += 1
+    }
+
+    result
+}
+
 #[cfg(test)]
 mod tests {
     mod increment_indices {

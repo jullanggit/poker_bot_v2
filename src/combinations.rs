@@ -1,6 +1,6 @@
 use std::{array, ops::Index};
 
-use crate::Card;
+use crate::{Card, Hand};
 
 #[derive(Clone)]
 pub struct CardCombinations<'a, const N: usize, const R: usize> {
@@ -85,36 +85,54 @@ const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize;
     false
 }
 
-struct CombinationMap<const N: usize, const R: usize, T>
+struct CombinationMap<const N: usize, const R: usize>
 where
     [(); num_combinations(N, R)]:,
+    [[(); R - 1]; N - 1]:,
 {
-    array: [T; num_combinations(N, R)],
+    array: [Hand; num_combinations(N, R)],
+    precomputed_num_combinations: [[usize; R - 1]; N - 1],
 }
-impl<const N: usize, const R: usize, T> Index<[usize; R]> for CombinationMap<N, R, T>
+impl<const N: usize, const R: usize> CombinationMap<N, R>
 where
     [(); num_combinations(N, R)]:,
+    [[(); R - 1]; N - 1]:,
 {
-    type Output = T;
-    fn index(&self, index: [usize; R]) -> &Self::Output {
-        let mut rank = 0;
+    const fn new() -> Self {
+        Self {
+            array: [Hand::RoyalFlush; num_combinations(N, R)],
+            precomputed_num_combinations: precompute_num_combinations::<N, R>(),
+        }
+    }
+}
+impl<const N: usize, const R: usize> Index<[usize; R]> for CombinationMap<N, R>
+where
+    [(); num_combinations(N, R)]:,
+    [[(); R - 1]; N - 1]:,
+{
+    type Output = Hand;
+    fn index(&self, combination_index: [usize; R]) -> &Self::Output {
+        let mut index = 0;
 
-        for (position, value) in index.into_iter().enumerate() {
-            // For every legal value smaller than the current one
-            for smaller_value in (if position > 0 {
-                index[position - 1] + 1
+        for (position, value) in combination_index.into_iter().enumerate() {
+            let min_value = if position > 0 {
+                combination_index[position - 1] + 1
             } else {
                 0
-            })..value
-            {
-                rank += num_combinations(N - smaller_value - 1, R - position - 1)
+            };
+
+            for smaller_value in min_value..value {
+                // TODO: Maybe invert this nested array, so that the index changing
+                // more frequently (smaller_value) is the inner one (better for cache)
+                index += self.precomputed_num_combinations[N - 1 - smaller_value][R - 1 - position];
             }
         }
-        &self.array[rank]
+
+        &self.array[index]
     }
 }
 
-const fn precompute_combinations<const N: usize, const R: usize>() -> [[usize; R - 1]; N - 1] {
+const fn precompute_num_combinations<const N: usize, const R: usize>() -> [[usize; R - 1]; N - 1] {
     let mut result = [[0; R - 1]; N - 1];
 
     let mut n = 0;

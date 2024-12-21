@@ -1,4 +1,5 @@
-use std::array;
+use std::{array, ops::Index};
+
 
 use crate::Card;
 
@@ -83,6 +84,35 @@ const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize;
     }
 
     false
+}
+
+struct CombinationMap<const N: usize, const R: usize, T>
+where
+    [(); num_combinations::<N, R>()]:,
+{
+    array: [T; num_combinations::<N, R>()],
+}
+impl<const N: usize, const R: usize, T> Index<[usize; R]> for CombinationMap<N, R, T>
+where
+    [(); num_combinations::<N, R>()]:,
+{
+    type Output = T;
+    fn index(&self, index: [usize; R]) -> &Self::Output {
+        let mut rank = 0;
+
+        for (position, value) in index.into_iter().enumerate() {
+            // For every legal value smaller than the current one
+            for smaller_value in (if position > 0 {
+                index[position - 1] + 1
+            } else {
+                0
+            })..value
+            {
+                rank += num_combinations::<{ N - smaller_value - 1 }, { R - position - 1 }>()
+            }
+        }
+        &self.array[rank]
+    }
 }
 
 #[cfg(test)]

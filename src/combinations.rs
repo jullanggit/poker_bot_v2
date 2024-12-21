@@ -1,6 +1,5 @@
 use std::{array, ops::Index};
 
-
 use crate::Card;
 
 #[derive(Clone)]
@@ -40,22 +39,21 @@ impl<const N: usize, const R: usize> Iterator for CardCombinations<'_, N, R> {
 }
 
 /// Calculates nCr
-// Also, this is horribly inefficient, but its at compile time, so it doesnt matter.
-// The upside is that this uses the same code as actually generating the combinations
-pub const fn num_combinations<const N: usize, const R: usize>() -> usize {
-    // Initialize indices
-    let mut indices = [0; R];
-    let mut i = 0;
-    while i < R {
-        indices[i] = i;
-        i += 1;
-    }
+const fn num_combinations(n: usize, r: usize) -> usize {
+    if r > n {
+        0
+    } else {
+        let mut result = 1;
+        let k = if r < n - r { r } else { n - r }; // Choose the smaller of r and n-r
+        let mut i = 0;
 
-    let mut result = 1;
-    while !increment_indices::<N, R>(&mut indices) {
-        result += 1;
+        while i < k {
+            result *= (n - i) / (i + 1);
+            i += 1;
+        }
+
+        result
     }
-    result
 }
 
 /// Increments the given indices, returns whether the end has been reached

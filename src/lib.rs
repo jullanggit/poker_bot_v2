@@ -151,28 +151,23 @@ where
 {
     let remaining_deck =
         create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
-    let player_combinations = Combinations::new();
 
     let mut player_hands: CombinationMap<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }> =
         const { CombinationMap::new() };
 
     // Fill hashmap with player hands
-    for (i, remaining_pool_indices) in player_combinations.enumerate() {
-        let remaining_pool = array::from_fn(|index| remaining_deck[remaining_pool_indices[index]]);
-        /*
-        Combine the present cards with the remaining cards to create a full set of 7 cards
-        I wish there was a better way to do this, but for now, this works
-        Alternative:
-        let combined_cards = array::from_fn(|index| {
+    for (i, remaining_pool_indices) in
+        Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }>::new().enumerate()
+    {
+        // Combine the present cards with the remaining cards to create a full set of 7 cards
+        // I wish there was a better way to do this, but for now, this works
+        let combined_cards: [Card; 7] = array::from_fn(|index| {
             if index < NUM_CARDS {
                 present_cards[index]
             } else {
-                remaining_pool[index - NUM_CARDS]
+                remaining_deck[remaining_pool_indices[index - NUM_CARDS]]
             }
         });
-        */
-        let combined_cards = array_from_iter_exact(present_cards.into_iter().chain(remaining_pool))
-            .expect("Failed to create combined cards");
 
         // This iterator should be in lexicographic order, so directly indexing the array should be fine
         player_hands.array[i] = highest_hand(combined_cards);
@@ -186,8 +181,13 @@ where
         let cards: [Card; 9 - NUM_CARDS] =
             array::from_fn(|index| remaining_deck[card_indices[index]]);
 
-        let combined_cards = array_from_iter_exact(present_cards.into_iter().skip(2).chain(cards))
-            .expect("Failed to create combined cards");
+        let combined_cards: [Card; 7] = array::from_fn(|index| {
+            if index < NUM_CARDS - 2 {
+                present_cards[index + 2]
+            } else {
+                remaining_deck[card_indices[index - (NUM_CARDS - 2)]]
+            }
+        });
         let highest_hand = highest_hand(combined_cards);
 
         for remaining_pool in

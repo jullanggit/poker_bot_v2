@@ -3,37 +3,32 @@ use std::{array, ops::Index};
 use crate::{Card, Hand};
 
 #[derive(Clone)]
-pub struct CardCombinations<'a, const N: usize, const R: usize> {
+pub struct Combinations<const N: usize, const R: usize> {
     indices: [usize; R],
-    cards: &'a [Card; N],
     first: bool,
 }
-impl<'a, const N: usize, const R: usize> CardCombinations<'a, N, R> {
-    pub fn new(cards: &'a [Card; N]) -> Self {
+impl<const N: usize, const R: usize> Combinations<N, R> {
+    pub fn new() -> Self {
         assert!(R <= N);
 
         Self {
             indices: array::from_fn(|index| index),
-            cards,
             first: true,
         }
     }
-    fn get_current_combination(&self) -> [Card; R] {
-        array::from_fn(|index| self.cards[self.indices[index]])
-    }
 }
-impl<const N: usize, const R: usize> Iterator for CardCombinations<'_, N, R> {
-    type Item = [Card; R];
+impl<const N: usize, const R: usize> Iterator for Combinations<N, R> {
+    type Item = [usize; R];
     fn next(&mut self) -> Option<Self::Item> {
         if self.first {
             self.first = false;
-            return Some(self.get_current_combination());
+            return Some(self.indices);
         }
 
         if increment_indices::<N, R>(&mut self.indices) {
             None
         } else {
-            Some(self.get_current_combination())
+            Some(self.indices)
         }
     }
 }

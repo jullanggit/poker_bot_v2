@@ -1,7 +1,7 @@
 #![feature(generic_const_exprs)]
 #![feature(array_try_from_fn)]
 
-use combinations::{CardCombinations, CombinationMap, num_combinations};
+use combinations::{CombinationMap, Combinations, num_combinations};
 use highest_hand::highest_hand;
 use std::{array, collections::HashMap};
 
@@ -151,13 +151,14 @@ where
 {
     let remaining_deck =
         create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
-    let player_combinations = CardCombinations::new(&remaining_deck);
+    let player_combinations = Combinations::new();
 
     let mut player_hands: CombinationMap<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }> =
         const { CombinationMap::new() };
 
     // Fill hashmap with player hands
-    for (i, remaining_pool) in player_combinations.enumerate() {
+    for (i, remaining_pool_indices) in player_combinations.enumerate() {
+        let remaining_pool = array::from_fn(|index| remaining_deck[remaining_pool_indices[index]]);
         /*
         Combine the present cards with the remaining cards to create a full set of 7 cards
         I wish there was a better way to do this, but for now, this works
@@ -181,14 +182,17 @@ where
 
     // Calculate results
     // For all possible remaining cards
-    for cards in
-        CardCombinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 9 - NUM_CARDS }>::new(&remaining_deck)
-    {
+    for card_indices in Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 9 - NUM_CARDS }>::new() {
+        let cards: [Card; 9 - NUM_CARDS] =
+            array::from_fn(|index| remaining_deck[card_indices[index]]);
+
         let combined_cards = array_from_iter_exact(present_cards.into_iter().skip(2).chain(cards))
             .expect("Failed to create combined cards");
         let highest_hand = highest_hand(combined_cards);
 
-        for remaining_pool in CardCombinations::new(&cards) {
+        for remaining_pool in
+            Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }>::new()
+        {
             let player_hand = player_hands[remaining_pool];
 
             match highest_hand.cmp(&player_hand) {

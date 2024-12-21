@@ -16,5 +16,7 @@ macro_rules! match_len_calculate {
 }
 fn main() {
     let cards = get_cards().unwrap();
-    let results = match_len_calculate!(cards, 2, 3, 4, 5, 6, 7);
+
+    // TODO: make calculate work with 7 cards
+    let results = match_len_calculate!(cards, 2, 3, 4, 5, 6);
 }

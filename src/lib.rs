@@ -150,10 +150,7 @@ where
     let player_combinations = CardCombinations::new(&remaining_deck);
 
     let mut player_hands: HashMap<[Card; 7 - NUM_CARDS], Hand> =
-        HashMap::with_capacity(num_combinations::<
-            { FULL_DECK_SIZE - NUM_CARDS },
-            { 7 - NUM_CARDS },
-        >());
+        HashMap::with_capacity(num_combinations(FULL_DECK_SIZE - NUM_CARDS, 7 - NUM_CARDS));
 
     // Fill hashmap with player hands
     for remaining_pool in player_combinations {

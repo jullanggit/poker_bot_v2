@@ -39,19 +39,20 @@ impl<const N: usize, const R: usize> Iterator for CardCombinations<'_, N, R> {
 }
 
 /// Calculates nCr
-const fn num_combinations(n: usize, r: usize) -> usize {
+pub const fn num_combinations(n: usize, r: usize) -> usize {
     if r > n {
         0
     } else {
+        // Const version of this: (1..=r).fold(1, |acc, val| acc * (n - val + 1) / val)
         let mut result = 1;
-        let k = if r < n - r { r } else { n - r }; // Choose the smaller of r and n-r
-        let mut i = 0;
 
-        while i < k {
-            result *= (n - i) / (i + 1);
+        let mut i = 0;
+        while i < r {
+            result *= n - i;
+            result /= i + 1;
+
             i += 1;
         }
-
         result
     }
 }
@@ -86,13 +87,13 @@ const fn increment_indices<const N: usize, const R: usize>(indices: &mut [usize;
 
 struct CombinationMap<const N: usize, const R: usize, T>
 where
-    [(); num_combinations::<N, R>()]:,
+    [(); num_combinations(N, R)]:,
 {
-    array: [T; num_combinations::<N, R>()],
+    array: [T; num_combinations(N, R)],
 }
 impl<const N: usize, const R: usize, T> Index<[usize; R]> for CombinationMap<N, R, T>
 where
-    [(); num_combinations::<N, R>()]:,
+    [(); num_combinations(N, R)]:,
 {
     type Output = T;
     fn index(&self, index: [usize; R]) -> &Self::Output {
@@ -106,7 +107,7 @@ where
                 0
             })..value
             {
-                rank += num_combinations::<{ N - smaller_value - 1 }, { R - position - 1 }>()
+                rank += num_combinations(N - smaller_value - 1, R - position - 1)
             }
         }
         &self.array[rank]
@@ -162,7 +163,7 @@ mod tests {
             macro_rules! equal_n_r {
                 ($($num:literal),+) => {
                     $(
-                        assert_eq!(num_combinations::<$num, $num>(), 1);
+                        assert_eq!(num_combinations($num, $num), 1);
                     )+
                 };
             }
@@ -173,7 +174,7 @@ mod tests {
             macro_rules! different_n_r {
                 ($(($N:literal, $R:literal, $E:literal)),+) => {
                     $(
-                        assert_eq!(num_combinations::<$N, $R>(), $E);
+                        assert_eq!(num_combinations($N,$R), $E);
                     )*
                 };
             }

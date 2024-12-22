@@ -7,6 +7,11 @@ pub struct Combinations<const N: usize, const R: usize> {
     indices: [usize; R],
     first: bool,
 }
+impl<const N: usize, const R: usize> Default for Combinations<N, R> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl<const N: usize, const R: usize> Combinations<N, R> {
     pub fn new() -> Self {
         assert!(R <= N);
@@ -89,6 +94,16 @@ where
     pub array: [Hand; num_combinations(N, R)],
     precomputed_num_combinations: [[usize; R - 1]; N - 1],
 }
+impl<const N: usize, const R: usize> Default for CombinationMap<N, R>
+where
+    [(); num_combinations(N, R)]:,
+    [[(); R - 1]; N - 1]:,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<const N: usize, const R: usize> CombinationMap<N, R>
 where
     [(); num_combinations(N, R)]:,

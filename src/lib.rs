@@ -3,7 +3,7 @@
 
 use combinations::{CombinationMap, Combinations, num_combinations};
 use highest_hand::highest_hand;
-use std::{array, collections::HashMap};
+use std::array;
 
 pub mod combinations;
 pub mod highest_hand;
@@ -131,7 +131,7 @@ pub enum Hand {
     HighCard,
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct Results {
     wins: u64,
     draws: u64,
@@ -208,9 +208,6 @@ where
     // Calculate results
     // For all possible remaining cards
     for card_indices in Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 9 - NUM_CARDS }>::new() {
-        let cards: [Card; 9 - NUM_CARDS] =
-            array::from_fn(|index| remaining_deck[card_indices[index]]);
-
         let combined_cards: [Card; 7] = array::from_fn(|index| {
             if index < NUM_CARDS - 2 {
                 present_cards[index + 2]

@@ -1,6 +1,6 @@
 use std::{array, ops::Index};
 
-use crate::{Card, Hand};
+use crate::Hand;
 
 #[derive(Clone)]
 pub struct Combinations<const N: usize, const R: usize> {

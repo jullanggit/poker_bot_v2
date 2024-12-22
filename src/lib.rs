@@ -142,12 +142,13 @@ pub struct Results {
     losses: u64,
 }
 
-/// Combines the two arrays of cards
-fn combine_cards_with_indices<const R: usize, const DECK_SIZE: usize>(
-    cards: [Card; R],
-    indices: [usize; 7 - R],
+fn combine_cards_with_indices<const N: usize, const DECK_SIZE: usize>(
+    cards: &[Card],
+    indices: [usize; N],
     deck: &[Card; DECK_SIZE],
 ) -> [Card; 7] {
+    debug_assert!(cards.len() + indices.len() == 7);
+
     let mut combined_cards = MaybeUninit::uninit_array();
 
     // SAFETY
@@ -156,12 +157,12 @@ fn combine_cards_with_indices<const R: usize, const DECK_SIZE: usize>(
         ptr::copy_nonoverlapping(
             cards.as_ptr() as *const MaybeUninit<Card>,
             combined_cards.as_mut_ptr(),
-            R,
+            7 - N,
         );
     }
 
     for (cards_index, deck_index) in indices.into_iter().enumerate() {
-        combined_cards[cards_index + R] = MaybeUninit::new(deck[deck_index]);
+        combined_cards[cards_index + 7 - N] = MaybeUninit::new(deck[deck_index]);
     }
 
     unsafe { MaybeUninit::array_assume_init(combined_cards) }
@@ -188,7 +189,6 @@ where
     for (i, remaining_pool_indices) in
         Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }>::new().enumerate()
     {
-        // Combine the present cards with the remaining cards to create a full set of 7 cards
         // I wish there was a better way to do this, but for now, this works
         let combined_cards: [Card; 7] = array::from_fn(|index| {
             if index < NUM_CARDS {

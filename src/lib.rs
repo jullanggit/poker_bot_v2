@@ -11,7 +11,7 @@ pub mod io;
 
 const FULL_DECK_SIZE: usize = 52;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, Default)]
 pub struct Card {
     value: CardValue,
     color: Color,
@@ -29,7 +29,7 @@ impl TryFrom<(u8, u8)> for Card {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash, Default)]
 pub enum CardValue {
     Two,
     Three,
@@ -42,6 +42,7 @@ pub enum CardValue {
     Ten,
     Jack,
     Queen,
+    #[default]
     King,
     Ace,
 }
@@ -87,8 +88,9 @@ impl TryFrom<u8> for CardValue {
     }
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash, Default)]
 pub enum Color {
+    #[default]
     Hearts,
     Diamonds,
     Clubs,
@@ -136,6 +138,31 @@ pub struct Results {
     wins: u64,
     draws: u64,
     losses: u64,
+}
+
+/// Combines the two arrays of cards
+fn combine_cards<const R: usize>(a: [Card; R], b: [Card; 7 - R]) -> [Card; 7] {
+    // TODO: Maybe use MaybeUninit for this
+    let mut combined_cards = [Card::default(); 7];
+
+    // SAFETY
+    // using copy_nonoverlapping is fine, because we copy into a locally defined array
+    unsafe {
+        // Copy a into the first part (..R) of the combined cards
+        std::ptr::copy_nonoverlapping(a.as_ptr(), combined_cards.as_mut_ptr(), R);
+
+        // Copy b into the second part (R..) of the combined cards
+        std::ptr::copy_nonoverlapping(
+            b.as_ptr(),
+            // SAFETY
+            // .add() is safe because we copy 7-R items into the region R..7 of the array
+            // ,which contains exactly 7-R items
+            combined_cards.as_mut_ptr().add(size_of::<[Card; R]>() * R),
+            7 - R,
+        );
+    }
+
+    combined_cards
 }
 
 // Necessary because caluclate doesnt work with seven cards
@@ -252,4 +279,27 @@ fn array_from_iter_exact<T, const N: usize>(mut iter: impl Iterator<Item = T>) -
 
     // If the iterator isnt used up
     if iter.next().is_some() { None } else { array }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Card, CardValue, Color, combine_cards};
+
+    #[test]
+    fn test_combine_cards() {
+        let a = [Card::new(CardValue::Ace, Color::Clubs); 5];
+        let b = [Card::default(); 2];
+
+        let combined = combine_cards(a, b);
+
+        assert_eq!(combined, [
+            Card::new(CardValue::Ace, Color::Clubs),
+            Card::new(CardValue::Ace, Color::Clubs),
+            Card::new(CardValue::Ace, Color::Clubs),
+            Card::new(CardValue::Ace, Color::Clubs),
+            Card::new(CardValue::Ace, Color::Clubs),
+            Card::default(),
+            Card::default(),
+        ]);
+    }
 }

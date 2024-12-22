@@ -1,9 +1,11 @@
 #![feature(generic_const_exprs)]
 #![feature(array_try_from_fn)]
+#![feature(maybe_uninit_uninit_array)]
+#![feature(maybe_uninit_array_assume_init)]
 
 use combinations::{CombinationMap, Combinations, num_combinations};
 use highest_hand::highest_hand;
-use std::array;
+use std::{array, mem::MaybeUninit, ptr};
 
 pub mod combinations;
 pub mod highest_hand;
@@ -141,58 +143,28 @@ pub struct Results {
 }
 
 /// Combines the two arrays of cards
-fn combine_cards<const R: usize>(a: [Card; R], b: [Card; 7 - R]) -> [Card; 7] {
-    // TODO: Maybe use MaybeUninit for this
-    let mut combined_cards = [Card::default(); 7];
+fn combine_cards_with_indices<const R: usize, const DECK_SIZE: usize>(
+    cards: [Card; R],
+    indices: [usize; 7 - R],
+    deck: &[Card; DECK_SIZE],
+) -> [Card; 7] {
+    let mut combined_cards = MaybeUninit::uninit_array();
 
     // SAFETY
     // using copy_nonoverlapping is fine, because we copy into a locally defined array
     unsafe {
-        // Copy a into the first part (..R) of the combined cards
-        std::ptr::copy_nonoverlapping(a.as_ptr(), combined_cards.as_mut_ptr(), R);
-
-        // Copy b into the second part (R..) of the combined cards
-        std::ptr::copy_nonoverlapping(
-            b.as_ptr(),
-            // SAFETY
-            // .add() is safe because we copy 7-R items into the region R..7 of the array
-            // ,which contains exactly 7-R items
-            combined_cards.as_mut_ptr().add(size_of::<[Card; R]>() * R),
-            7 - R,
+        ptr::copy_nonoverlapping(
+            cards.as_ptr() as *const MaybeUninit<Card>,
+            combined_cards.as_mut_ptr(),
+            R,
         );
     }
 
-    combined_cards
-}
-
-// Necessary because caluclate doesnt work with seven cards
-pub fn calculate_7(present_cards: [Card; 7]) -> Results {
-    let remaining_deck =
-        create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
-
-    let player_hand = highest_hand(present_cards);
-
-    let mut results = Results::default();
-
-    // Calculate results
-    // For all possible remaining cards
-    for card_indices in Combinations::<{ FULL_DECK_SIZE - 7 }, 2>::new() {
-        let combined_cards: [Card; 7] = array::from_fn(|index| {
-            if index < 5 {
-                present_cards[index + 2]
-            } else {
-                remaining_deck[card_indices[index - 5]]
-            }
-        });
-        let highest_hand = highest_hand(combined_cards);
-
-        match highest_hand.cmp(&player_hand) {
-            std::cmp::Ordering::Less => results.losses += 1,
-            std::cmp::Ordering::Equal => results.draws += 1,
-            std::cmp::Ordering::Greater => results.wins += 1,
-        }
+    for (cards_index, deck_index) in indices.into_iter().enumerate() {
+        combined_cards[cards_index + R] = MaybeUninit::new(deck[deck_index]);
     }
-    results
+
+    unsafe { MaybeUninit::array_assume_init(combined_cards) }
 }
 
 pub fn calculate<const NUM_CARDS: usize>(present_cards: [Card; NUM_CARDS]) -> Results
@@ -260,6 +232,36 @@ where
     results
 }
 
+// Necessary because caluclate doesnt work with seven cards
+pub fn calculate_7(present_cards: [Card; 7]) -> Results {
+    let remaining_deck =
+        create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
+
+    let player_hand = highest_hand(present_cards);
+
+    let mut results = Results::default();
+
+    // Calculate results
+    // For all possible remaining cards
+    for card_indices in Combinations::<{ FULL_DECK_SIZE - 7 }, 2>::new() {
+        let combined_cards: [Card; 7] = array::from_fn(|index| {
+            if index < 5 {
+                present_cards[index + 2]
+            } else {
+                remaining_deck[card_indices[index - 5]]
+            }
+        });
+        let highest_hand = highest_hand(combined_cards);
+
+        match highest_hand.cmp(&player_hand) {
+            std::cmp::Ordering::Less => results.losses += 1,
+            std::cmp::Ordering::Equal => results.draws += 1,
+            std::cmp::Ordering::Greater => results.wins += 1,
+        }
+    }
+    results
+}
+
 /// Creates a full poker deck, without the given present cards in it.
 /// Returns None, if there are any duplicates in the present cards
 fn create_deck_without_present_cards<const NUM_CARDS: usize>(
@@ -283,14 +285,16 @@ fn array_from_iter_exact<T, const N: usize>(mut iter: impl Iterator<Item = T>) -
 
 #[cfg(test)]
 mod tests {
-    use crate::{Card, CardValue, Color, combine_cards};
+    use crate::{Card, CardValue, Color, combine_cards_with_indices};
 
     #[test]
-    fn test_combine_cards() {
-        let a = [Card::new(CardValue::Ace, Color::Clubs); 5];
-        let b = [Card::default(); 2];
+    fn test_combine_cards_with_indices() {
+        let deck = [Card::default()];
 
-        let combined = combine_cards(a, b);
+        let cards = [Card::new(CardValue::Ace, Color::Clubs); 5];
+        let indices = [0; 2];
+
+        let combined = combine_cards_with_indices(cards, indices, &deck);
 
         assert_eq!(combined, [
             Card::new(CardValue::Ace, Color::Clubs),

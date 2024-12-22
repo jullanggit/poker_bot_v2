@@ -1,4 +1,4 @@
-use poker_bot_v2::{calculate, io::get_cards};
+use poker_bot_v2::{calculate, calculate_7, io::get_cards};
 
 /// Runs calculate with the given const lens
 macro_rules! match_len_calculate {
@@ -17,6 +17,10 @@ macro_rules! match_len_calculate {
 fn main() {
     let cards = get_cards().unwrap();
 
-    // TODO: make calculate work with 7 cards
-    let results = match_len_calculate!(cards, 2, 3, 4, 5, 6);
+    let results = if cards.len() != 7 {
+        match_len_calculate!(cards, 2, 3, 4, 5, 6)
+    } else {
+        calculate_7(cards.try_into().unwrap())
+    };
+    println!("Results: {results:?}");
 }

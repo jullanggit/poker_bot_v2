@@ -138,6 +138,36 @@ pub struct Results {
     losses: u64,
 }
 
+// Necessary because caluclate doesnt work with seven cards
+pub fn calculate_7(present_cards: [Card; 7]) -> Results {
+    let remaining_deck =
+        create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
+
+    let player_hand = highest_hand(present_cards);
+
+    let mut results = Results::default();
+
+    // Calculate results
+    // For all possible remaining cards
+    for card_indices in Combinations::<{ FULL_DECK_SIZE - 7 }, 2>::new() {
+        let combined_cards: [Card; 7] = array::from_fn(|index| {
+            if index < 5 {
+                present_cards[index + 2]
+            } else {
+                remaining_deck[card_indices[index - 5]]
+            }
+        });
+        let highest_hand = highest_hand(combined_cards);
+
+        match highest_hand.cmp(&player_hand) {
+            std::cmp::Ordering::Less => results.losses += 1,
+            std::cmp::Ordering::Equal => results.draws += 1,
+            std::cmp::Ordering::Greater => results.wins += 1,
+        }
+    }
+    results
+}
+
 pub fn calculate<const NUM_CARDS: usize>(present_cards: [Card; NUM_CARDS]) -> Results
 where
     [(); 7 - NUM_CARDS]:,

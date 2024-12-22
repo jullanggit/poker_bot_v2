@@ -189,14 +189,8 @@ where
     for (i, remaining_pool_indices) in
         Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }>::new().enumerate()
     {
-        // I wish there was a better way to do this, but for now, this works
-        let combined_cards: [Card; 7] = array::from_fn(|index| {
-            if index < NUM_CARDS {
-                present_cards[index]
-            } else {
-                remaining_deck[remaining_pool_indices[index - NUM_CARDS]]
-            }
-        });
+        let combined_cards =
+            combine_cards_with_indices(&present_cards, remaining_pool_indices, &remaining_deck);
 
         // This iterator should be in lexicographic order, so directly indexing the array should be fine
         player_hands.array[i] = highest_hand(combined_cards);
@@ -207,13 +201,8 @@ where
     // Calculate results
     // For all possible remaining cards
     for card_indices in Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 9 - NUM_CARDS }>::new() {
-        let combined_cards: [Card; 7] = array::from_fn(|index| {
-            if index < NUM_CARDS - 2 {
-                present_cards[index + 2]
-            } else {
-                remaining_deck[card_indices[index - (NUM_CARDS - 2)]]
-            }
-        });
+        let combined_cards =
+            combine_cards_with_indices(&present_cards[2..], card_indices, &remaining_deck);
         let highest_hand = highest_hand(combined_cards);
 
         for remaining_pool in
@@ -244,13 +233,8 @@ pub fn calculate_7(present_cards: [Card; 7]) -> Results {
     // Calculate results
     // For all possible remaining cards
     for card_indices in Combinations::<{ FULL_DECK_SIZE - 7 }, 2>::new() {
-        let combined_cards: [Card; 7] = array::from_fn(|index| {
-            if index < 5 {
-                present_cards[index + 2]
-            } else {
-                remaining_deck[card_indices[index - 5]]
-            }
-        });
+        let combined_cards =
+            combine_cards_with_indices(&present_cards[2..], card_indices, &remaining_deck);
         let highest_hand = highest_hand(combined_cards);
 
         match highest_hand.cmp(&player_hand) {
@@ -294,7 +278,7 @@ mod tests {
         let cards = [Card::new(CardValue::Ace, Color::Clubs); 5];
         let indices = [0; 2];
 
-        let combined = combine_cards_with_indices(cards, indices, &deck);
+        let combined = combine_cards_with_indices(&cards, indices, &deck);
 
         assert_eq!(combined, [
             Card::new(CardValue::Ace, Color::Clubs),

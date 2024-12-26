@@ -2,6 +2,7 @@
 #![feature(array_try_from_fn)]
 #![feature(maybe_uninit_uninit_array)]
 #![feature(maybe_uninit_array_assume_init)]
+#![feature(slice_as_array)]
 
 use combinations::{CombinationMap, Combinations, num_combinations};
 use highest_hand::highest_hand;
@@ -142,9 +143,9 @@ pub struct Results {
     losses: u64,
 }
 
-fn combine_cards_with_indices<const N: usize, const DECK_SIZE: usize>(
-    cards: &[Card],
-    indices: [usize; N],
+fn combine_cards_with_indices<const R: usize, const DECK_SIZE: usize>(
+    cards: [Card; R],
+    indices: [usize; 7 - R],
     deck: &[Card; DECK_SIZE],
 ) -> [Card; 7] {
     debug_assert!(cards.len() + indices.len() == 7);
@@ -157,12 +158,12 @@ fn combine_cards_with_indices<const N: usize, const DECK_SIZE: usize>(
         ptr::copy_nonoverlapping(
             cards.as_ptr() as *const MaybeUninit<Card>,
             combined_cards.as_mut_ptr(),
-            7 - N,
+            R,
         );
     }
 
     for (cards_index, deck_index) in indices.into_iter().enumerate() {
-        combined_cards[cards_index + 7 - N] = MaybeUninit::new(deck[deck_index]);
+        combined_cards[cards_index + R] = MaybeUninit::new(deck[deck_index]);
     }
 
     unsafe { MaybeUninit::array_assume_init(combined_cards) }
@@ -178,6 +179,8 @@ where
     [(); num_combinations(FULL_DECK_SIZE - NUM_CARDS, 7 - NUM_CARDS)]:,
     [(); FULL_DECK_SIZE - NUM_CARDS - 1]:,
     [(); 7 - NUM_CARDS - 1]:,
+    [(); NUM_CARDS - 2]:,
+    [(); 7 - (NUM_CARDS - 2)]:,
 {
     let remaining_deck =
         create_deck_without_present_cards(present_cards).expect("Failed to create remaining deck");
@@ -190,7 +193,7 @@ where
         Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - NUM_CARDS }>::new().enumerate()
     {
         let combined_cards =
-            combine_cards_with_indices(&present_cards, remaining_pool_indices, &remaining_deck);
+            combine_cards_with_indices(present_cards, remaining_pool_indices, &remaining_deck);
 
         // This iterator should be in lexicographic order, so directly indexing the array should be fine
         player_hands.array[i] = highest_hand(combined_cards);
@@ -200,9 +203,18 @@ where
 
     // Calculate results
     // For all possible remaining cards
-    for card_indices in Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 9 - NUM_CARDS }>::new() {
-        let combined_cards =
-            combine_cards_with_indices(&present_cards[2..], card_indices, &remaining_deck);
+    for card_indices in
+        Combinations::<{ FULL_DECK_SIZE - NUM_CARDS }, { 7 - (NUM_CARDS - 2) }>::new()
+    {
+        // Get the present pool and convert it to an array
+        let present_pool: [Card; NUM_CARDS - 2] = *present_cards[2..]
+            .as_array()
+            .expect("present_cards.len() == NUM_CARDS -> present_cards[2..].len() == NUM_CARDS -2");
+
+        let combined_cards = combine_cards_with_indices::<
+            { NUM_CARDS - 2 },
+            { FULL_DECK_SIZE - NUM_CARDS },
+        >(present_pool, card_indices, &remaining_deck);
         let highest_hand = highest_hand(combined_cards);
 
         for remaining_pool in
@@ -233,8 +245,16 @@ pub fn calculate_7(present_cards: [Card; 7]) -> Results {
     // Calculate results
     // For all possible remaining cards
     for card_indices in Combinations::<{ FULL_DECK_SIZE - 7 }, 2>::new() {
-        let combined_cards =
-            combine_cards_with_indices(&present_cards[2..], card_indices, &remaining_deck);
+        // Get the present pool and convert it to an array
+        let present_pool: [Card; 5] = *present_cards[2..]
+            .as_array()
+            .expect("present_cards.len() == NUM_CARDS -> present_cards[2..].len() == NUM_CARDS -2");
+
+        let combined_cards = combine_cards_with_indices::<5, { FULL_DECK_SIZE - 7 }>(
+            present_pool,
+            card_indices,
+            &remaining_deck,
+        );
         let highest_hand = highest_hand(combined_cards);
 
         match highest_hand.cmp(&player_hand) {
@@ -278,7 +298,7 @@ mod tests {
         let cards = [Card::new(CardValue::Ace, Color::Clubs); 5];
         let indices = [0; 2];
 
-        let combined = combine_cards_with_indices(&cards, indices, &deck);
+        let combined = combine_cards_with_indices(cards, indices, &deck);
 
         assert_eq!(combined, [
             Card::new(CardValue::Ace, Color::Clubs),

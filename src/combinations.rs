@@ -2,6 +2,7 @@ use std::{array, ops::Index};
 
 use crate::Hand;
 
+/// An iterator that returns all possible length R combinations of 0..N
 #[derive(Clone)]
 pub struct Combinations<const N: usize, const R: usize> {
     indices: [usize; R],

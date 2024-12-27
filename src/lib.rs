@@ -143,6 +143,7 @@ pub struct Results {
     losses: u64,
 }
 
+/// Create a full hand, from some present cards and a list of indices to the deck
 fn combine_cards_with_indices<const R: usize, const S: usize, const DECK_SIZE: usize>(
     cards: [Card; R],
     indices: [usize; S],
@@ -172,7 +173,6 @@ fn combine_cards_with_indices<const R: usize, const S: usize, const DECK_SIZE: u
 pub fn calculate<const NUM_CARDS: usize>(present_cards: [Card; NUM_CARDS]) -> Results
 where
     [(); 7 - NUM_CARDS]:,
-    // Seriously? FULL_DECK_SIZE is 52! We already check that 7-NUM_CARDS is valid, so 52-NUM_CARDS is as well!
     [(); FULL_DECK_SIZE - NUM_CARDS]:,
     [(); 9 - NUM_CARDS]:,
     // N = FULL_DECK_SIZE - NUM_CARDS, R = 7 - NUM_CARDS

@@ -143,19 +143,12 @@ pub struct Results {
     losses: u64,
 }
 
-// Without extractng this check into a function, rustc complains about an overly complex generic constant
-const fn assert_s_equals_r_minus_7(s: usize, r: usize) {
-    if s != r - 7 {
-        panic!()
-    }
-}
-
 fn combine_cards_with_indices<const R: usize, const S: usize, const DECK_SIZE: usize>(
     cards: [Card; R],
     indices: [usize; S],
     deck: &[Card; DECK_SIZE],
 ) -> [Card; 7] {
-    const { assert_s_equals_r_minus_7(S, R) };
+    debug_assert_eq!(S, 7 - R);
 
     let mut combined_cards = MaybeUninit::uninit_array();
 

@@ -1,10 +1,21 @@
 use crate::{Card, Hand};
 
 #[derive(Clone, Copy)]
+/// A bitmap with one bit per `CardValue`
 struct ValueBitmap(u16);
 impl ValueBitmap {
     fn is_flush(&self) -> bool {
         self.0.count_ones() >= 5
+    }
+    fn is_straight(&self) -> bool {
+        let straight_mask = 0b0001111100000000;
+        for shift in 0..9 {
+            let mask = straight_mask >> shift;
+            if self.0 & mask == mask {
+                return true;
+            }
+        }
+        false
     }
 }
 

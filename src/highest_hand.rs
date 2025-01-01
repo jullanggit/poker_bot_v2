@@ -62,9 +62,15 @@ impl ColorValueBitmaps {
 pub fn highest_hand(cards: [Card; 7]) -> Hand {
     let color_value_bitmaps = ColorValueBitmaps::from(cards);
 
-    match color_value_bitmaps.get_flush() {
-        Some(flush) => {}
-        None => {}
+    // Check for Royal & Straight flushes
+    if let Some(flush) = color_value_bitmaps.get_flush()
+        && let Some(iter) = flush.is_straight()
+    {
+        return if iter == 0 {
+            Hand::RoyalFlush
+        } else {
+            Hand::StraightFlush
+        };
     }
 
     todo!()

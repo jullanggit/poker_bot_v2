@@ -3,6 +3,7 @@
 #![feature(maybe_uninit_uninit_array)]
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(slice_as_array)]
+#![feature(let_chains)]
 
 use combinations::{CombinationMap, Combinations, num_combinations};
 use highest_hand::highest_hand;

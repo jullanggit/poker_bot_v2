@@ -19,15 +19,16 @@ impl ValueBitmap<SingleColored> {
     }
 }
 impl<State> ValueBitmap<State> {
-    fn is_straight(&self) -> bool {
+    /// Returns the iteration the straight was found on, if any
+    fn is_straight(&self) -> Option<u8> {
         let straight_mask = 0b0001111100000000;
         for shift in 0..9 {
             let mask = straight_mask >> shift;
             if self.inner & mask == mask {
-                return true;
+                return Some(shift);
             }
         }
-        false
+        None
     }
     fn new(inner: u16) -> Self {
         Self {

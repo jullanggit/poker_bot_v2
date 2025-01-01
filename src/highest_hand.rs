@@ -57,6 +57,14 @@ impl ColorValueBitmaps {
             .into_iter()
             .find(|value_bitmap| value_bitmap.is_flush())
     }
+    fn is_four_of_a_kind(&self) -> bool {
+        // TODO: See if manually initialising with first.inner is faster
+        self.0
+            .into_iter()
+            // AND all values together
+            .fold(u16::MAX, |acc, value_bitmap| acc & value_bitmap.inner)
+            != 0
+    }
 }
 
 pub fn highest_hand(cards: [Card; 7]) -> Hand {
@@ -71,6 +79,10 @@ pub fn highest_hand(cards: [Card; 7]) -> Hand {
         } else {
             Hand::StraightFlush
         };
+    }
+
+    if color_value_bitmaps.is_four_of_a_kind() {
+        return Hand::FourOfAKind;
     }
 
     todo!()

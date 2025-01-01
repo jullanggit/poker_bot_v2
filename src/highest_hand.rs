@@ -9,6 +9,7 @@ struct MultiColored;
 #[derive(Clone, Copy)]
 /// A bitmap with one bit per `CardValue`
 struct ValueBitmap<State> {
+    // TODO: Maybe add a niche here
     inner: u16,
     _state: PhantomData<State>,
 }
@@ -36,22 +37,31 @@ impl<State> ValueBitmap<State> {
     }
 }
 
-pub fn highest_hand(cards: [Card; 7]) -> Hand {
-    let color_bitmaps = convert_to_color_bitmaps(cards);
+/// One `ValueBitmap` per color
+struct ColorValueBitmaps([ValueBitmap<SingleColored>; 4]);
+impl From<[Card; 7]> for ColorValueBitmaps {
+    fn from(cards: [Card; 7]) -> Self {
+        let mut color_value_bitmaps = ColorValueBitmaps([ValueBitmap::new(0); 4]);
 
-    let is_flush = color_bitmaps
-        .iter()
-        .any(|value_bitmap| value_bitmap.is_flush());
+        for card in cards {
+            color_value_bitmaps.0[card.color as usize].inner |= 1 << card.value as u8;
+        }
 
-    todo!()
+        color_value_bitmaps
+    }
+}
+impl ColorValueBitmaps {
+    fn get_flush(&self) -> Option<ValueBitmap<SingleColored>> {
+        self.0
+            .into_iter()
+            .find(|value_bitmap| value_bitmap.is_flush())
+    }
 }
 
-fn convert_to_color_bitmaps(cards: [Card; 7]) -> [ValueBitmap<SingleColored>; 4] {
-    let mut color_bitmaps = [ValueBitmap::new(0); 4];
+pub fn highest_hand(cards: [Card; 7]) -> Hand {
+    let color_value_bitmaps = ColorValueBitmaps::from(cards);
 
-    for card in cards {
-        color_bitmaps[card.color as usize].inner |= 1 << card.value as u8;
-    }
+    let flush = color_value_bitmaps.get_flush();
 
-    color_bitmaps
+    todo!()
 }

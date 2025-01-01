@@ -61,7 +61,10 @@ impl ColorValueBitmaps {
 pub fn highest_hand(cards: [Card; 7]) -> Hand {
     let color_value_bitmaps = ColorValueBitmaps::from(cards);
 
-    let flush = color_value_bitmaps.get_flush();
+    match color_value_bitmaps.get_flush() {
+        Some(flush) => {}
+        None => {}
+    }
 
     todo!()
 }
